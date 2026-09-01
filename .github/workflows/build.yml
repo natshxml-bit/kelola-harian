@@ -53,6 +53,18 @@ jobs:
           PY
       - name: Install dependencies
         run: flutter pub get
+      - name: Patch isar_flutter_libs manifest for AGP8
+        run: |
+          MANIFEST=$HOME/.pub-cache/hosted/pub.dev/isar_flutter_libs-3.1.0+1/android/src/main/AndroidManifest.xml
+          if [ -f "$MANIFEST" ]; then
+            sed -i 's/ package="[^"]*"//' "$MANIFEST"
+            echo "Patched: $MANIFEST"
+            grep -n "<manifest" "$MANIFEST"
+          else
+            echo "ERROR: manifest not found at $MANIFEST"
+            ls $HOME/.pub-cache/hosted/pub.dev/ | grep isar || ls -d $HOME/.pub-cache/hosted/pub.dev/isar_flutter_libs-* 2>/dev/null
+            exit 1
+          fi
       - name: Build Isar
         run: dart run build_runner build --delete-conflicting-outputs
       - name: Build APK
