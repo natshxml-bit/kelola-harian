@@ -44,6 +44,7 @@ jobs:
               plugins.withType<LibraryPlugin> {
                   extensions.configure<com.android.build.gradle.LibraryExtension> {
                       if (namespace == null) namespace = "kelola.harian.lib"
+                      if (compileSdk == null || compileSdk < 36) compileSdk = 36
                   }
               }
           }
