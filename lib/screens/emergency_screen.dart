@@ -5,6 +5,7 @@ import 'package:isar/isar.dart';
 import '../services/db_service.dart';
 import '../providers/providers.dart';
 import '../utils/currency.dart';
+import '../models/emergency_fund.dart';
 
 class EmergencyScreen extends ConsumerWidget {
   const EmergencyScreen({super.key});

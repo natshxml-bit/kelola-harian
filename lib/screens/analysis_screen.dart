@@ -4,6 +4,7 @@ import 'package:fl_chart/fl_chart.dart';
 
 import '../providers/providers.dart';
 import '../utils/currency.dart';
+import '../models/transaction.dart';
 
 class AnalysisScreen extends ConsumerStatefulWidget {
   const AnalysisScreen({super.key});
@@ -165,7 +166,7 @@ class _State extends ConsumerState<AnalysisScreen> {
     );
   }
 
-  List _filter(List txs) {
+  List<TransactionModel> _filter(List<TransactionModel> txs) {
     final now = DateTime.now();
     return txs.where((t) {
       if (range == 'harian')
@@ -178,7 +179,7 @@ class _State extends ConsumerState<AnalysisScreen> {
     }).toList();
   }
 
-  Map<int, int> _group(List txs) {
+  Map<int, int> _group(List<TransactionModel> txs) {
     final map = <int, int>{};
     for (var t in txs.where((e) => e.tipe == 'pengeluaran')) {
       int key;
@@ -197,7 +198,7 @@ class _State extends ConsumerState<AnalysisScreen> {
     );
   }
 
-  Map<String, int> _byCategory(List txs) {
+  Map<String, int> _byCategory(List<TransactionModel> txs) {
     final map = <String, int>{};
     for (var t in txs.where((e) => e.tipe == 'pengeluaran'))
       map[t.categoryName] = (map[t.categoryName] ?? 0) + (t.nominal as int);
