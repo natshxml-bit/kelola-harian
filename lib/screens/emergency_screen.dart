@@ -10,9 +10,7 @@ class EmergencyScreen extends ConsumerWidget{
   @override
   Widget build(BuildContext context, WidgetRef ref){
     final efAsync=ref.watch(emergencyProvider);
-    return Scaffold(
-      appBar: AppBar(title: const Text('Dana Darurat')),
-      body: efAsync.when(
+    return efAsync.when(
         data: (ef){
           if(ef==null) return const Text('loading');
           return Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -37,7 +35,8 @@ class EmergencyScreen extends ConsumerWidget{
         },
         loading: ()=> const Center(child: CircularProgressIndicator()),
         error: (e,s)=> Text('$e'),
-      ),
+      );
+  }
     );
   }
   void _edit(BuildContext ctx, WidgetRef ref, ef, bool add){

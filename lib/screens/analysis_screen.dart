@@ -14,9 +14,7 @@ class _State extends ConsumerState<AnalysisScreen>{
   @override
   Widget build(BuildContext context){
     final txsAsync=ref.watch(transactionsProvider);
-    return Scaffold(
-      appBar: AppBar(title: const Text('Analisis')),
-      body: txsAsync.when(
+    return txsAsync.when(
         data: (txs){
           final filtered=_filter(txs);
           final grouped=_group(filtered);
@@ -65,8 +63,8 @@ class _State extends ConsumerState<AnalysisScreen>{
         },
         loading: ()=> const Center(child: CircularProgressIndicator()),
         error: (e,s)=> Text('$e'),
-      ),
-    );
+      );
+    }
   }
   List _filter(List txs){
     final now=DateTime.now();

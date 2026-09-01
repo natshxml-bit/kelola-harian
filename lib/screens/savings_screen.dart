@@ -11,11 +11,15 @@ class SavingsScreen extends ConsumerWidget{
   @override
   Widget build(BuildContext context, WidgetRef ref){
     final goals=ref.watch(savingsProvider);
-    return Scaffold(
-      appBar: AppBar(title: const Text('Tabung Goal')),
-      body: goals.when(
+    return goals.when(
         data: (list){
-          if(list.isEmpty) return const Center(child: Text('Belum ada tabungan'));
+          if(list.isEmpty) return Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+            const Icon(Icons.savings_outlined, size: 48, color: Colors.grey),
+            const SizedBox(height: 12),
+            const Text('Belum ada tabungan', style: TextStyle(color: Colors.grey)),
+            const SizedBox(height: 12),
+            FilledButton.icon(onPressed: ()=> _addGoal(context, ref), icon: const Icon(Icons.add), label: const Text('Buat Goal')),
+          ]));
           return ListView(padding: const EdgeInsets.all(12), children: list.map((g)=> Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(g.nama, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
             Text('${fmt(g.terkumpul)} / ${fmt(g.target)}'),
@@ -38,9 +42,7 @@ class SavingsScreen extends ConsumerWidget{
         },
         loading: ()=> const Center(child: CircularProgressIndicator()),
         error: (e,s)=> Text('$e'),
-      ),
-      floatingActionButton: FloatingActionButton(onPressed: ()=> _addGoal(context, ref), child: const Icon(Icons.add)),
-    );
+      );
   }
   void _addGoal(BuildContext ctx, WidgetRef ref){
     final nama=TextEditingController();
