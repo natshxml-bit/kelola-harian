@@ -1,0 +1,44 @@
+name: Build APK
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+      - name: Backup custom files
+        run: |
+          mkdir -p /tmp/backup
+          cp -r lib /tmp/backup/ 2>/dev/null || true
+          cp pubspec.yaml /tmp/backup/ 2>/dev/null || true
+          ls -R /tmp/backup | head -20
+      - name: Create Flutter scaffold if missing
+        run: |
+          if [ ! -d "android" ]; then
+            flutter create . --platforms android --org com.kelola.harian --project-name kelola_harian
+          fi
+          ls -la | head -20
+      - name: Restore custom files
+        run: |
+          cp -r /tmp/backup/lib/* lib/ 2>/dev/null || true
+          cp /tmp/backup/pubspec.yaml . 2>/dev/null || true
+          cat pubspec.yaml | head -20
+      - name: Install dependencies
+        run: flutter pub get
+      - name: Build Isar
+        run: dart run build_runner build --delete-conflicting-outputs
+      - name: Build APK
+        run: flutter build apk --release --dart-define SUPABASE_URL=https://gyvtqjhpbjbqizevavjw.supabase.co --dart-define SUPABASE_ANON=sb_publishable_BtwSwFNniis6CWOy4AykKg_agwLv3Cw
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: kelola-harian-apk
+          path: build/app/outputs/flutter-apk/app-release.apk

@@ -1,0 +1,9 @@
+.dart_tool/
+.build/
+.packages
+build/
+*.lock
+*.g.dart
+android/app/debug
+android/app/profile
+android/app/release
