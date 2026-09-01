@@ -37,15 +37,13 @@ jobs:
           python3 - << 'PY'
           p = "android/build.gradle.kts"
           s = open(p).read()
-          if "LibraryExtension" not in s:
-              s = "import com.android.build.gradle.LibraryExtension\n\n" + s
+          if "LibraryPlugin" not in s:
+              s = "import com.android.build.gradle.LibraryPlugin\n\n" + s
           patch = '''
           subprojects {
-              afterEvaluate {
-                  if (plugins.hasPlugin("com.android.library")) {
-                      extensions.configure<LibraryExtension> {
-                          if (namespace == null) namespace = "kelola.harian.lib"
-                      }
+              plugins.withType<LibraryPlugin> {
+                  extensions.configure<com.android.build.gradle.LibraryExtension> {
+                      if (namespace == null) namespace = "kelola.harian.lib"
                   }
               }
           }
