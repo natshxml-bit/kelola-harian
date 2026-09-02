@@ -80,14 +80,21 @@ jobs:
         run: dart run build_runner build --delete-conflicting-outputs
       - name: Setup signing
         run: |
-          cp release-key.jks android/app/release-key.jks
-          cd android/app
-          sed -i '/buildTypes {/i\    signingConfigs {\n        create("release") {\n            storeFile = file("release-key.jks")\n            storePassword = "kelola123"\n            keyAlias = "kelola_harian"\n            keyPassword = "kelola123"\n        }\n    }\n' build.gradle.kts
-          sed -i 's/signingConfig = signingConfigs.getByName("debug")/signingConfig = signingConfigs.getByName("release")/' build.gradle.kts
-          echo "=== signing section ==="
-          grep -A 12 "signingConfigs" build.gradle.kts
+          cp release-key.jks /tmp/release-key.jks
+          echo "Keystore copied to /tmp"
       - name: Build APK
         run: flutter build apk --release --dart-define SUPABASE_URL=https://gyvtqjhpbjbqizevavjw.supabase.co --dart-define SUPABASE_ANON=sb_publishable_BtwSwFNniis6CWOy4AykKg_agwLv3Cw
+      - name: Sign APK
+        run: |
+          export PATH="$ANDROID_HOME/build-tools/$(ls $ANDROID_HOME/build-tools/ | tail -1):$PATH"
+          APK=$(find build/app/outputs/flutter-apk -name "*.apk" | head -1)
+          ALIGNED=$(echo $APK | sed 's/.apk$/-aligned.apk/')
+          SIGNED=$(echo $APK | sed 's/.apk$/-signed.apk/')
+          zipalign -v -p 4 $APK $ALIGNED
+          apksigner sign --ks /tmp/release-key.jks --ks-pass pass:kelola123 --key-pass pass:kelola123 --ks-key-alias kelola_harian --out $SIGNED $ALIGNED
+          mv $SIGNED $APK
+          echo "APK signed successfully"
+          keytool -printcert -jarfile $APK 2>&1 | grep SHA1
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
