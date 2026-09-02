@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:gotrue/gotrue.dart' show OAuthProvider;
 
 import '../services/sync_service.dart';
 
@@ -116,7 +117,7 @@ class _State extends State<AuthScreen> {
                         }
                         final gAuth = await gUser.authentication;
                         await Supabase.instance.client.auth.signInWithIdToken(
-                          provider: Provider.google,
+                          provider: OAuthProvider.google,
                           idToken: gAuth.idToken!,
                           accessToken: gAuth.accessToken,
                         );
