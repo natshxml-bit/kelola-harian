@@ -326,7 +326,7 @@ class SyncService {
         'target': r.target,
         'terkumpul': r.terkumpul,
         'auto_percent': r.autoPercent,
-        if (r.deadline != null) 'deadline': r.deadline!.toUtc().toIso8601String(),
+        if (r.deadline != null) 'deadline': r.deadline!.toIso8601String(),
         'created_at': r.createdAt.toUtc().toIso8601String(),
       });
     }
@@ -385,7 +385,7 @@ class SyncService {
         'category_name': r.categoryName,
         'tipe': r.tipe,
         'nominal': r.nominal,
-        'tanggal': r.tanggal.toUtc().toIso8601String(),
+        'tanggal': r.tanggal.toIso8601String(),
         'catatan': r.catatan,
         'created_at': r.createdAt.toUtc().toIso8601String(),
       });
@@ -441,7 +441,7 @@ class SyncService {
           ..terkumpul = (row['terkumpul'] as int?) ?? 0
           ..autoPercent = (row['auto_percent'] as int?) ?? 0;
         final dl = row['deadline'] as String?;
-        g.deadline = dl == null ? null : DateTime.parse(dl).toLocal();
+        g.deadline = dl == null ? null : DateTime.parse(dl);
         final ct = row['created_at'] as String?;
         if (ct != null) g.createdAt = DateTime.parse(ct).toLocal();
         await db.savingsGoals.put(g);
@@ -505,7 +505,7 @@ class SyncService {
           ..nominal = (row['nominal'] as int?) ?? 0
           ..catatan = (row['catatan'] as String?) ?? '';
         final tg = row['tanggal'] as String?;
-        if (tg != null) t.tanggal = DateTime.parse(tg).toLocal();
+        if (tg != null) t.tanggal = DateTime.parse(tg);
         final ct = row['created_at'] as String?;
         if (ct != null) t.createdAt = DateTime.parse(ct).toLocal();
         await db.transactionModels.put(t);
