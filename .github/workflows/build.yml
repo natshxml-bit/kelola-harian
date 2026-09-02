@@ -81,17 +81,11 @@ jobs:
       - name: Setup signing
         run: |
           cp release-key.jks android/app/release-key.jks
-          cat > android/key.properties << 'EOF'
-          storePassword=kelola123
-          keyPassword=kelola123
-          keyAlias=kelola_harian
-          storeFile=release-key.jks
-          EOF
           cd android/app
-          sed -i '/buildTypes {/i\    signingConfigs {\n        create("release") {\n            val kp = java.util.Properties()\n            kp.load(java.io.FileInputStream(rootProject.file("key.properties")))\n            storeFile = file(kp["storeFile"] as String)\n            storePassword = kp["storePassword"] as String\n            keyAlias = kp["keyAlias"] as String\n            keyPassword = kp["keyPassword"] as String\n        }\n    }\n' build.gradle.kts
+          sed -i '/buildTypes {/i\    signingConfigs {\n        create("release") {\n            storeFile = file("release-key.jks")\n            storePassword = "kelola123"\n            keyAlias = "kelola_harian"\n            keyPassword = "kelola123"\n        }\n    }\n' build.gradle.kts
           sed -i 's/signingConfig = signingConfigs.getByName("debug")/signingConfig = signingConfigs.getByName("release")/' build.gradle.kts
-          echo "=== build.gradle.kts (signing section) ==="
-          grep -A 20 "signingConfigs" build.gradle.kts
+          echo "=== signing section ==="
+          grep -A 12 "signingConfigs" build.gradle.kts
       - name: Build APK
         run: flutter build apk --release --dart-define SUPABASE_URL=https://gyvtqjhpbjbqizevavjw.supabase.co --dart-define SUPABASE_ANON=sb_publishable_BtwSwFNniis6CWOy4AykKg_agwLv3Cw
       - name: Upload APK
