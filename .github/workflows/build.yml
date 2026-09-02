@@ -32,6 +32,10 @@ jobs:
           cp /tmp/backup/pubspec.yaml . 2>/dev/null || true
           rm -f test/widget_test.dart
           cat pubspec.yaml | head -20
+      - name: Set app label (Pengelola Harian)
+        run: |
+          sed -i 's/android:label="[^"]*"/android:label="Pengelola Harian"/' android/app/src/main/AndroidManifest.xml
+          grep -n "android:label" android/app/src/main/AndroidManifest.xml
       - name: Patch Android namespace for isar
         run: |
           python3 - << 'PY'
