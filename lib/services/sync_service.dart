@@ -26,9 +26,19 @@ class SyncService {
   static String _localUid = 'local';
   static String? _lastAccountUid;
   static final _authCtrl = StreamController<int>.broadcast();
+  static final _dataCtrl = StreamController<int>.broadcast();
 
   /// Dipicu setiap ada perubahan autentikasi (login/logout/session restore).
   static Stream<int> get authChanges => _authCtrl.stream;
+
+  /// Dipicu setelah data lokal disinkronkan (push/pull/delete) — untuk auto-refresh provider.
+  static Stream<int> get dataChanges => _dataCtrl.stream;
+
+  static void _notifyData() {
+    try {
+      _dataCtrl.add(1);
+    } catch (_) {}
+  }
 
   static Future<void> init() async {
     if (!enabled) return;
@@ -120,7 +130,9 @@ class SyncService {
             if (payload.eventType == PostgresChangeEvent.delete) {
               _removeLocalByRemoteId(t, payload.oldRecord['id'] as String?);
             }
-            syncSoon();
+            // Cukup tarik — jangan push balik dari event realtime (mencegah loop
+            // karena push sendiri juga ikut memicu event realtime).
+            pullSoon();
           },
         );
       }
@@ -188,6 +200,32 @@ class SyncService {
       // sync gagal (mis. tabel belum dibuat / offline) — app tetap jalan lokal
     } finally {
       _syncing = false;
+      _notifyData();
+    }
+  }
+
+  /// Tarik data server tanpa push — dipanggil dari event realtime (device lain).
+  static void pullSoon() {
+    if (!loggedIn) return;
+    _debounce?.cancel();
+    _debounce = Timer(const Duration(seconds: 2), () => pullNow());
+  }
+
+  static Future<void> pullNow() async {
+    if (!loggedIn) return;
+    if (_syncing) return;
+    _syncing = true;
+    try {
+      final db = await DbService.isar;
+      final uidUser = authUid!;
+      await _safe(() => _pullTransactions(db, uidUser));
+      await _safe(() => _pullGoals(db, uidUser));
+      await _safe(() => _pullEmergency(db, uidUser));
+      await _safe(() => _pullGeneral(db, uidUser));
+      await _safe(() => _pullCategories(db, uidUser));
+    } finally {
+      _syncing = false;
+      _notifyData();
     }
   }
 
@@ -526,6 +564,7 @@ class SyncService {
     if (!loggedIn || remoteId == null || remoteId.isEmpty) return;
     try {
       await client!.from(table).delete().eq('id', remoteId);
+      _notifyData();
     } catch (_) {}
   }
 
@@ -537,6 +576,7 @@ class SyncService {
     } catch (_) {}
     try {
       await client!.from('categories').delete().eq('id', remoteId);
+      _notifyData();
     } catch (_) {}
   }
 }

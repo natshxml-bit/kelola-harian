@@ -22,10 +22,10 @@ class DbService {
     return _isar!;
   }
 
-  static Future<void> seedCategories(String userId) async {
+  static Future<bool> seedCategories(String userId) async {
     final db = await isar;
     final count = await db.categoryModels.filter().userIdEqualTo(userId).count();
-    if (count > 0) return;
+    if (count > 0) return false;
     final defaults = [
       {'nama': 'Makan', 'icon': 'restaurant', 'tipe': 'pengeluaran', 'color': 0xFFE91E63},
       {'nama': 'Transport', 'icon': 'directions_bus', 'tipe': 'pengeluaran', 'color': 0xFF2196F3},
@@ -38,8 +38,10 @@ class DbService {
     ];
     await db.writeTxn(() async {
       for (var d in defaults) {
+        // uuid v5 deterministik per user+kategori -> dua device untuk user yang
+        // sama memakai id sama, sehingga upsert server tidak membuat duplikat.
         await db.categoryModels.put(CategoryModel()
-          ..remoteId = const Uuid().v4()
+          ..remoteId = const Uuid().v5(Uuid.NAMESPACE_URL, 'kelola-harian:$userId:${d['tipe']!}:${d['nama']!}')
           ..userId = userId
           ..nama = d['nama'] as String
           ..icon = d['icon'] as String
@@ -48,5 +50,6 @@ class DbService {
           ..isCustom = false);
       }
     });
+    return true;
   }
 }

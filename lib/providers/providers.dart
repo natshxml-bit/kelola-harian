@@ -21,6 +21,20 @@ class AuthTick extends Notifier<int> {
   void bump() => state++;
 }
 
+/// Dipicu setiap kali data lokal selesai diganti oleh hasil sync (push/pull/delete).
+final dataTickProvider = NotifierProvider<DataTick, int>(DataTick.new);
+
+class DataTick extends Notifier<int> {
+  @override
+  int build() {
+    final sub = SyncService.dataChanges.listen((_) => bump());
+    ref.onDispose(sub.cancel);
+    return 0;
+  }
+
+  void bump() => state++;
+}
+
 final userIdProvider = FutureProvider<String>((ref) async {
   ref.watch(authTickProvider);
   if (SyncService.enabled && SyncService.hasAccount) {
@@ -31,26 +45,30 @@ final userIdProvider = FutureProvider<String>((ref) async {
 
 final categoriesProvider = FutureProvider<List<CategoryModel>>((ref) async {
   final uid = await ref.watch(userIdProvider.future);
+  ref.watch(dataTickProvider);
   final db = await DbService.isar;
-  await DbService.seedCategories(uid);
-  SyncService.syncSoon();
+  final seeded = await DbService.seedCategories(uid);
+  if (seeded) SyncService.syncSoon();
   return await db.categoryModels.filter().userIdEqualTo(uid).findAll();
 });
 
 final transactionsProvider = FutureProvider<List<TransactionModel>>((ref) async {
   final uid = await ref.watch(userIdProvider.future);
+  ref.watch(dataTickProvider);
   final db = await DbService.isar;
   return await db.transactionModels.filter().userIdEqualTo(uid).sortByTanggalDesc().findAll();
 });
 
 final savingsProvider = FutureProvider<List<SavingsGoal>>((ref) async {
   final uid = await ref.watch(userIdProvider.future);
+  ref.watch(dataTickProvider);
   final db = await DbService.isar;
   return await db.savingsGoals.filter().userIdEqualTo(uid).findAll();
 });
 
 final emergencyProvider = FutureProvider<EmergencyFund?>((ref) async {
   final uid = await ref.watch(userIdProvider.future);
+  ref.watch(dataTickProvider);
   final db = await DbService.isar;
   var f = await db.emergencyFunds.filter().userIdEqualTo(uid).findFirst();
   if (f == null) {
@@ -63,6 +81,7 @@ final emergencyProvider = FutureProvider<EmergencyFund?>((ref) async {
 
 final generalFundProvider = FutureProvider<GeneralFund?>((ref) async {
   final uid = await ref.watch(userIdProvider.future);
+  ref.watch(dataTickProvider);
   final db = await DbService.isar;
   var f = await db.generalFunds.filter().userIdEqualTo(uid).findFirst();
   if (f == null) {
