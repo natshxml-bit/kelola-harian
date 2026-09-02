@@ -8,6 +8,7 @@ import '../models/transaction.dart';
 import '../models/category.dart';
 import '../models/savings_goal.dart';
 import '../models/emergency_fund.dart';
+import '../models/general_fund.dart';
 import '../providers/providers.dart';
 import '../theme.dart';
 

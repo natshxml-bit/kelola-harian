@@ -16,7 +16,7 @@ class DbService {
       TransactionModelSchema,
       SavingsGoalSchema,
       EmergencyFundSchema,
-      GeneralFundModelSchema,
+      GeneralFundSchema,
     ], directory: dir.path);
     return _isar!;
   }
