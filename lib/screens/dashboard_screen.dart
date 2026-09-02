@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/providers.dart';
 import '../utils/currency.dart';
+import '../theme.dart';
 import 'add_transaction_screen.dart';
 import 'analysis_screen.dart';
 import 'savings_screen.dart';
@@ -36,7 +37,7 @@ class DashboardScreen extends ConsumerWidget {
                 data: (d) => Row(children: [
                   Expanded(child: _StatCard(label: 'Hari Ini', income: d['todayIn']!, expense: d['todayOut']!, icon: Icons.today, color: const Color(0xFF57758A))),
                   const SizedBox(width: 12),
-                  Expanded(child: _StatCard(label: 'Bulan Ini', income: d['monthIn']!, expense: d['monthOut']!, icon: Icons.calendar_month, color: const Color(0xFF3E3B49))),
+                  Expanded(child: _StatCard(label: 'Bulan Ini', income: d['monthIn']!, expense: d['monthOut']!, icon: Icons.calendar_month, color: context.ap.textMuted)),
                 ]),
                 loading: () => const SizedBox(),
                 error: (_, __) => const SizedBox(),
@@ -77,10 +78,13 @@ class DashboardScreen extends ConsumerWidget {
               ]),
             ),
           ),
-          const SliverPadding(
-            padding: EdgeInsets.fromLTRB(16, 20, 16, 8),
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
             sliver: SliverToBoxAdapter(
-              child: Text('Transaksi Terbaru', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16, color: Color(0xFF3E3B49))),
+              child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                Text('Transaksi Terbaru', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16, color: context.ap.text)),
+                Text('ketuk untuk edit', style: TextStyle(color: context.ap.textMuted, fontSize: 11)),
+              ]),
             ),
           ),
           txs.when(
@@ -93,11 +97,11 @@ class DashboardScreen extends ConsumerWidget {
                       child: Padding(
                         padding: EdgeInsets.all(32),
                         child: Center(child: Column(children: [
-                          Icon(Icons.receipt_long, size: 48, color: Colors.grey),
+                          Icon(Icons.receipt_long, size: 48, color: context.ap.textMuted),
                           SizedBox(height: 12),
-                          Text('Belum ada transaksi', style: TextStyle(color: Colors.grey, fontSize: 14)),
+                          Text('Belum ada transaksi', style: TextStyle(color: context.ap.textMuted, fontSize: 14)),
                           SizedBox(height: 4),
-                          Text('Tap + untuk mulai catat', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                          Text('Tap + untuk mulai catat', style: TextStyle(color: context.ap.textMuted, fontSize: 12)),
                         ])),
                       ),
                     ),
@@ -111,23 +115,32 @@ class DashboardScreen extends ConsumerWidget {
                     (ctx, i) {
                       final t = list[i];
                       final isIn = t.tipe == 'pemasukan';
+                      final c = isIn ? context.ap.income : context.ap.expense;
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 8),
                         child: Card(
                           child: ListTile(
+                            onTap: () => showAddTransaction(context, edit: t),
                             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                             leading: CircleAvatar(
-                              backgroundColor: (isIn ? const Color(0xFF4CAF50) : const Color(0xFFCC5C64)).withValues(alpha: 0.15),
-                              child: Icon(isIn ? Icons.arrow_downward : Icons.arrow_upward, color: isIn ? const Color(0xFF4CAF50) : const Color(0xFFCC5C64), size: 18),
+                              backgroundColor: c.withValues(alpha: 0.15),
+                              child: Icon(isIn ? Icons.arrow_downward : Icons.arrow_upward, color: c, size: 18),
                             ),
                             title: Text(t.categoryName, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
                             subtitle: Text(
                               '${t.tanggal.day}/${t.tanggal.month}/${t.tanggal.year}${t.catatan.isNotEmpty ? ' • ${t.catatan}' : ''}',
-                              style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                              style: TextStyle(color: context.ap.textMuted, fontSize: 12),
                             ),
-                            trailing: Text(
-                              '${isIn ? '+' : '-'}${fmt(t.nominal)}',
-                              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: isIn ? const Color(0xFF4CAF50) : const Color(0xFFCC5C64)),
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  '${isIn ? '+' : '-'}${fmt(t.nominal)}',
+                                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: c),
+                                ),
+                                const SizedBox(width: 8),
+                                Icon(Icons.edit_outlined, size: 16, color: context.ap.textMuted),
+                              ],
                             ),
                           ),
                         ),
@@ -219,15 +232,15 @@ class _StatCard extends StatelessWidget {
           ]),
           const SizedBox(height: 12),
           Row(children: [
-            Icon(Icons.arrow_downward, size: 12, color: Colors.green.shade600),
+            Icon(Icons.arrow_downward, size: 12, color: context.ap.income),
             const SizedBox(width: 4),
-            Text(fmt(income), style: TextStyle(fontSize: 12, color: Colors.green.shade700, fontWeight: FontWeight.w600)),
+            Text(fmt(income), style: TextStyle(fontSize: 12, color: context.ap.income, fontWeight: FontWeight.w600)),
           ]),
           const SizedBox(height: 4),
           Row(children: [
-            Icon(Icons.arrow_upward, size: 12, color: Colors.red.shade400),
+            Icon(Icons.arrow_upward, size: 12, color: context.ap.expense),
             const SizedBox(width: 4),
-            Text(fmt(expense), style: TextStyle(fontSize: 12, color: Colors.red.shade400, fontWeight: FontWeight.w600)),
+            Text(fmt(expense), style: TextStyle(fontSize: 12, color: context.ap.expense, fontWeight: FontWeight.w600)),
           ]),
         ]),
       ),

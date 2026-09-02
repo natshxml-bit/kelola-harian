@@ -20,47 +20,52 @@ class EmergencyScreen extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Card(
-                color: Colors.red.shade50,
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Dana Darurat',
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      Text(
-                        '${fmt(ef.terkumpul)} / ${fmt(ef.target)}',
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      LinearProgressIndicator(
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(colors: [Color(0xFFCC5C64), Color(0xFF8E3B46)], begin: Alignment.topLeft, end: Alignment.bottomRight),
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: [BoxShadow(color: const Color(0xFFCC5C64).withValues(alpha: 0.3), blurRadius: 16, offset: const Offset(0, 8))],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(children: [
+                      const Icon(Icons.health_and_safety, color: Colors.white, size: 20),
+                      const SizedBox(width: 8),
+                      const Text('Dana Darurat', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 16)),
+                      const Spacer(),
+                      _pct(context, ef),
+                    ]),
+                    const SizedBox(height: 14),
+                    Text(
+                      '${fmt(ef.terkumpul)} / ${fmt(ef.target)}',
+                      style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w800),
+                    ),
+                    const SizedBox(height: 12),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: LinearProgressIndicator(
                         value: ef.progress.clamp(0, 1),
                         minHeight: 10,
-                        color: Colors.red,
+                        backgroundColor: Colors.white.withValues(alpha: 0.25),
+                        color: Colors.white,
                       ),
-                      Text(
-                        '${(ef.progress * 100).toStringAsFixed(1)}% • Auto ${ef.autoPercent}% dari pemasukan',
-                      ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        'Ideal: 3x pengeluaran bulanan. Atur target manual atau biarkan auto hitung.',
-                        style: TextStyle(fontSize: 12, color: Colors.grey),
-                      ),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      'Auto ${ef.autoPercent}% dari pemasukan • Idealnya 3x pengeluaran bulanan',
+                      style: TextStyle(color: Colors.white.withValues(alpha: 0.85), fontSize: 12),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: 16),
               Row(
                 children: [
                   Expanded(
-                    child: ElevatedButton(
+                    child: FilledButton.tonal(
                       onPressed: () => _edit(context, ref, ef, true),
                       child: const Text('Nabung'),
                     ),
@@ -74,10 +79,14 @@ class EmergencyScreen extends ConsumerWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
-              FilledButton.tonal(
-                onPressed: () => _setting(context, ref, ef),
-                child: const Text('Atur Target & Auto %'),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () => _setting(context, ref, ef),
+                  icon: const Icon(Icons.tune),
+                  label: const Text('Atur Target & Auto %'),
+                ),
               ),
             ],
           ),
@@ -85,6 +94,15 @@ class EmergencyScreen extends ConsumerWidget {
       },
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, s) => Text('$e'),
+    );
+  }
+
+  Widget _pct(BuildContext context, ef) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(20)),
+      child: Text('${(ef.progress * 100).toStringAsFixed(0)}%',
+          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 13)),
     );
   }
 

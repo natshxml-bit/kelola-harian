@@ -5,6 +5,7 @@ import '../services/db_service.dart';
 import '../providers/providers.dart';
 import '../models/savings_goal.dart';
 import '../utils/currency.dart';
+import '../theme.dart';
 
 class SavingsScreen extends ConsumerWidget{
   const SavingsScreen({super.key});
@@ -14,18 +15,18 @@ class SavingsScreen extends ConsumerWidget{
     return goals.when(
         data: (list){
           if(list.isEmpty) return Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-            const Icon(Icons.savings_outlined, size: 48, color: Colors.grey),
+            Icon(Icons.savings_outlined, size: 48, color: context.ap.textMuted),
             const SizedBox(height: 12),
-            const Text('Belum ada tabungan', style: TextStyle(color: Colors.grey)),
+            Text('Belum ada tabungan', style: TextStyle(color: context.ap.textMuted)),
             const SizedBox(height: 12),
             FilledButton.icon(onPressed: ()=> _addGoal(context, ref), icon: const Icon(Icons.add), label: const Text('Buat Goal')),
           ]));
           return ListView(padding: const EdgeInsets.all(12), children: list.map((g)=> Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(g.nama, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-            Text('${fmt(g.terkumpul)} / ${fmt(g.target)}'),
+            Text('${fmt(g.terkumpul)} / ${fmt(g.target)}', style: TextStyle(color: context.ap.textMuted, fontSize: 13)),
             const SizedBox(height: 8),
-            LinearProgressIndicator(value: g.progress.clamp(0,1), minHeight: 8),
-            Text('${(g.progress*100).toStringAsFixed(1)}% • Auto ${g.autoPercent}%'),
+            LinearProgressIndicator(value: g.progress.clamp(0,1), minHeight: 8, borderRadius: BorderRadius.circular(4)),
+            Text('${(g.progress*100).toStringAsFixed(1)}% • Auto ${g.autoPercent}%', style: TextStyle(color: context.ap.textMuted, fontSize: 12)),
             const SizedBox(height: 8),
             Row(children: [
               ElevatedButton(onPressed: ()=> _topup(context, ref, g, true), child: const Text('+ Nabung')),
