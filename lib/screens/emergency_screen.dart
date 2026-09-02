@@ -55,7 +55,9 @@ class EmergencyScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: 10),
                     Text(
-                      'Auto ${ef.autoPercent}% dari pemasukan • Idealnya 3x pengeluaran bulanan',
+                      ef.autoPercent > 0
+                          ? 'Auto ${ef.autoPercent}% dari pemasukan • Idealnya 3x pengeluaran bulanan'
+                          : 'Dikelola manual • Idealnya 3x pengeluaran bulanan',
                       style: TextStyle(color: Colors.white.withValues(alpha: 0.85), fontSize: 12),
                     ),
                   ],

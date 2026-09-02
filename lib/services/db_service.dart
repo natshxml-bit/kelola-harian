@@ -4,6 +4,7 @@ import '../models/category.dart';
 import '../models/transaction.dart';
 import '../models/savings_goal.dart';
 import '../models/emergency_fund.dart';
+import '../models/general_fund.dart';
 
 class DbService {
   static Isar? _isar;
@@ -15,6 +16,7 @@ class DbService {
       TransactionModelSchema,
       SavingsGoalSchema,
       EmergencyFundSchema,
+      GeneralFundModelSchema,
     ], directory: dir.path);
     return _isar!;
   }

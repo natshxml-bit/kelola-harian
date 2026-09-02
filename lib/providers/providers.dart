@@ -6,6 +6,7 @@ import '../models/transaction.dart';
 import '../models/category.dart';
 import '../models/savings_goal.dart';
 import '../models/emergency_fund.dart';
+import '../models/general_fund.dart';
 
 final userIdProvider = FutureProvider<String>((ref) async {
   if (SyncService.enabled && SyncService.client?.auth.currentUser != null) {
@@ -38,8 +39,19 @@ final emergencyProvider = FutureProvider<EmergencyFund?>((ref) async {
   final db = await DbService.isar;
   var f = await db.emergencyFunds.filter().userIdEqualTo(uid).findFirst();
   if (f == null) {
-    f = EmergencyFund()..userId = uid..target = 3000000..terkumpul = 0..autoPercent = 5;
+    f = EmergencyFund()..userId = uid..target = 3000000..terkumpul = 0..autoPercent = 0;
     await db.writeTxn(() async => await db.emergencyFunds.put(f!));
+  }
+  return f;
+});
+
+final generalFundProvider = FutureProvider<GeneralFund?>((ref) async {
+  final uid = await ref.watch(userIdProvider.future);
+  final db = await DbService.isar;
+  var f = await db.generalFunds.filter().userIdEqualTo(uid).findFirst();
+  if (f == null) {
+    f = GeneralFund()..userId = uid..saldo = 0..autoPercent = 0;
+    await db.writeTxn(() async => await db.generalFunds.put(f!));
   }
   return f;
 });

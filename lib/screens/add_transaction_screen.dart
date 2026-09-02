@@ -330,6 +330,13 @@ class _AddTransactionSheetState extends ConsumerState<_AddTransactionSheet> {
           if (ef.terkumpul < 0) ef.terkumpul = 0;
           await db.emergencyFunds.put(ef);
         }
+        final gf = await db.generalFunds.filter().userIdEqualTo(uid).findFirst();
+        if (gf != null && gf.autoPercent > 0) {
+          final add = nominal * gf.autoPercent ~/ 100;
+          gf.saldo += old?.tipe == 'pemasukan' ? add - old!.nominal * gf.autoPercent ~/ 100 : add;
+          if (gf.saldo < 0) gf.saldo = 0;
+          await db.generalFunds.put(gf);
+        }
       }
     });
     _invalidate();

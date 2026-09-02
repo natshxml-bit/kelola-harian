@@ -59,5 +59,16 @@ create table if not exists emergency_fund (
 alter table emergency_fund enable row level security;
 create policy "user can manage own emergency" on emergency_fund for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
+-- General Fund (Tabungan Umum)
+create table if not exists general_fund (
+  id uuid primary key default uuid_generate_v4(),
+  user_id uuid references auth.users(id) on delete cascade unique,
+  saldo bigint default 0,
+  auto_percent int default 0,
+  created_at timestamp default now()
+);
+alter table general_fund enable row level security;
+create policy "user can manage own general fund" on general_fund for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
 -- Realtime
-alter publication supabase_realtime add table categories, transactions, savings_goals, emergency_fund;
+alter publication supabase_realtime add table categories, transactions, savings_goals, emergency_fund, general_fund;
