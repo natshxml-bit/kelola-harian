@@ -18,23 +18,62 @@ class SyncService {
   static bool get loggedIn => enabled && Supabase.instance.client.auth.currentUser != null;
   static String? get authUid => loggedIn ? Supabase.instance.client.auth.currentUser?.id : null;
 
+  /// true jika device ini pernah/login dalam akun (untuk frozen uid saat session nge-flap).
+  static bool get hasAccount => _lastAccountUid != null;
+
   static Timer? _debounce;
   static bool _syncing = false;
   static String _localUid = 'local';
+  static String? _lastAccountUid;
+  static final _authCtrl = StreamController<int>.broadcast();
+
+  /// Dipicu setiap ada perubahan autentikasi (login/logout/session restore).
+  static Stream<int> get authChanges => _authCtrl.stream;
 
   static Future<void> init() async {
     if (!enabled) return;
     await Supabase.initialize(url: supabaseUrl, anonKey: supabaseAnon);
     _localUid = await getLocalUid();
+    _listenAuth();
     _subscribeRealtime();
     if (loggedIn) syncNow();
   }
 
+  static void _listenAuth() {
+    try {
+      Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+        final uid = data.session?.user.id;
+        switch (data.event) {
+          case AuthChangeEvent.initialSession:
+            if (uid != null) _lastAccountUid = uid;
+            break;
+          case AuthChangeEvent.tokenRefreshed:
+            if (uid != null) _lastAccountUid = uid;
+            break;
+          case AuthChangeEvent.signedIn:
+            if (uid != null) _lastAccountUid = uid;
+            _authCtrl.add(1);
+            break;
+          case AuthChangeEvent.signedOut:
+            _lastAccountUid = null;
+            _authCtrl.add(1);
+            break;
+          default:
+            break;
+        }
+      });
+    } catch (_) {}
+  }
+
   static SupabaseClient? get client => enabled ? Supabase.instance.client : null;
   static String get uid {
-    final c = client;
-    if (c == null) return 'local';
-    return c.auth.currentUser?.id ?? _localUid;
+    final cu = client?.auth.currentUser?.id;
+    if (cu != null) {
+      _lastAccountUid = cu;
+      return cu;
+    }
+    if (_lastAccountUid != null) return _lastAccountUid!;
+    return _localUid;
   }
   static Future<void> setLocalUid(String id) async {
     final p = await SharedPreferences.getInstance();
@@ -98,11 +137,13 @@ class SyncService {
     _subscribed = false;
     _subscriptionNeedsResub = true;
     _localUid = await getLocalUid();
+    _lastAccountUid = Supabase.instance.client.auth.currentUser?.id;
     syncNow();
   }
 
   /// Keluar dari akun: batalkan channel realtime & reset state sync.
   static Future<void> signOut() async {
+    _lastAccountUid = null;
     try {
       await Supabase.instance.client.auth.signOut();
     } catch (_) {}

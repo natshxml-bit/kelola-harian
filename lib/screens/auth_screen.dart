@@ -73,7 +73,7 @@ class _State extends ConsumerState<AuthScreen> {
                         );
                         await SyncService.onLogin();
                         if (mounted) {
-                          ref.invalidate(authTickProvider);
+                          ref.read(authTickProvider.notifier).bump();
                           Navigator.pop(context);
                         }
                       } catch (e) {
@@ -132,7 +132,7 @@ class _State extends ConsumerState<AuthScreen> {
                         );
                         await SyncService.onLogin();
                         if (mounted) {
-                          ref.invalidate(authTickProvider);
+                          ref.read(authTickProvider.notifier).bump();
                           Navigator.pop(context);
                         }
                       } catch (e) {

@@ -8,11 +8,22 @@ import '../models/savings_goal.dart';
 import '../models/emergency_fund.dart';
 import '../models/general_fund.dart';
 
-final authTickProvider = StateProvider<int>((ref) => 0);
+final authTickProvider = NotifierProvider<AuthTick, int>(AuthTick.new);
+
+class AuthTick extends Notifier<int> {
+  @override
+  int build() {
+    final sub = SyncService.authChanges.listen((_) => bump());
+    ref.onDispose(sub.cancel);
+    return 0;
+  }
+
+  void bump() => state++;
+}
 
 final userIdProvider = FutureProvider<String>((ref) async {
   ref.watch(authTickProvider);
-  if (SyncService.enabled && SyncService.client?.auth.currentUser != null) {
+  if (SyncService.enabled && SyncService.hasAccount) {
     return SyncService.uid;
   }
   return await SyncService.getLocalUid();

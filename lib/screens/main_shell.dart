@@ -84,7 +84,7 @@ class _MainShellState extends ConsumerState<MainShell> {
     if (keluar == true && mounted) {
       await SyncService.signOut();
       if (mounted) {
-        ref.invalidate(authTickProvider);
+        ref.read(authTickProvider.notifier).bump();
         setState(() {});
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Sudah keluar. Data tetap tersimpan di HP ini.')),
