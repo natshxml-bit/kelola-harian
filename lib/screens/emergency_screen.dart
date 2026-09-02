@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:isar/isar.dart';
 
 import '../services/db_service.dart';
+import '../services/sync_service.dart';
 import '../providers/providers.dart';
 import '../utils/currency.dart';
 import '../models/emergency_fund.dart';
@@ -130,6 +131,7 @@ class EmergencyScreen extends ConsumerWidget {
                     : (ef.terkumpul - v).clamp(0, 1 << 62);
                 await db.emergencyFunds.put(ef);
               });
+              SyncService.syncSoon();
               ref.invalidate(emergencyProvider);
               if (ctx.mounted) Navigator.pop(ctx);
             },
@@ -171,6 +173,7 @@ class EmergencyScreen extends ConsumerWidget {
                 ef.autoPercent = int.tryParse(p.text) ?? ef.autoPercent;
                 await db.emergencyFunds.put(ef);
               });
+              SyncService.syncSoon();
               ref.invalidate(emergencyProvider);
               if (ctx.mounted) Navigator.pop(ctx);
             },

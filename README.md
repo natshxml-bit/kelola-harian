@@ -23,7 +23,7 @@ Aplikasi pengelola keuangan harian — catat pengeluaran & pemasukan, tabung ke 
 - Analisis trend (harian/mingguan/bulanan/tahunan) + pie per kategori
 - Edit & hapus transaksi langsung dari daftar terbaru
 - Tema gelap/terang mengikuti sistem
-- Sync multi-device via Supabase (email + Google) — skema di `supabase.sql`
+- Sync multi-device via Supabase (email + Google + realtime) — data offline otomatis diadopsi ke akun saat login; skema di `supabase.sql`
 
 ## Supabase
 

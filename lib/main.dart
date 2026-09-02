@@ -5,5 +5,6 @@ import 'app.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await SyncService.init();
+  if (SyncService.loggedIn) SyncService.syncNow();
   runApp(const ProviderScope(child: App()));
 }

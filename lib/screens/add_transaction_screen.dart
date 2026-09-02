@@ -237,6 +237,7 @@ class _AddTransactionSheetState extends ConsumerState<_AddTransactionSheet> {
       ..tipe = tipe
       ..isCustom = true;
     await db.writeTxn(() async => await db.categoryModels.put(cat));
+    SyncService.syncSoon();
     ref.invalidate(categoriesProvider);
     setState(() { catId = cat.id.toString(); catName = cat.nama; });
   }
@@ -288,11 +289,12 @@ class _AddTransactionSheetState extends ConsumerState<_AddTransactionSheet> {
       final t = widget.edit;
       if (t != null) await db.transactionModels.delete(t.id);
     });
-    _invalidate();
-    if (mounted) {
-      Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Transaksi dihapus')));
-    }
+SyncService.syncSoon();
+      _invalidate();
+      if (mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Transaksi dihapus')));
+      }
   }
 
   Future<void> _save() async {
@@ -340,6 +342,7 @@ class _AddTransactionSheetState extends ConsumerState<_AddTransactionSheet> {
         }
       }
     });
+    SyncService.syncSoon();
     _invalidate();
     if (mounted) {
       Navigator.pop(context);

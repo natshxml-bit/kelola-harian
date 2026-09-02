@@ -19,6 +19,7 @@ final categoriesProvider = FutureProvider<List<CategoryModel>>((ref) async {
   final uid = await ref.watch(userIdProvider.future);
   final db = await DbService.isar;
   await DbService.seedCategories(uid);
+  SyncService.syncSoon();
   return await db.categoryModels.filter().userIdEqualTo(uid).findAll();
 });
 
@@ -41,6 +42,7 @@ final emergencyProvider = FutureProvider<EmergencyFund?>((ref) async {
   if (f == null) {
     f = EmergencyFund()..userId = uid..target = 3000000..terkumpul = 0..autoPercent = 0;
     await db.writeTxn(() async => await db.emergencyFunds.put(f!));
+    SyncService.syncSoon();
   }
   return f;
 });
@@ -52,6 +54,7 @@ final generalFundProvider = FutureProvider<GeneralFund?>((ref) async {
   if (f == null) {
     f = GeneralFund()..userId = uid..saldo = 0..autoPercent = 0;
     await db.writeTxn(() async => await db.generalFunds.put(f!));
+    SyncService.syncSoon();
   }
   return f;
 });

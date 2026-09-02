@@ -65,6 +65,7 @@ class _State extends State<AuthScreen> {
                           email: email.text,
                           password: pass.text,
                         );
+                        SyncService.onLogin();
                         if (mounted) Navigator.pop(context);
                       } catch (e) {
                         if (mounted)
@@ -107,6 +108,7 @@ class _State extends State<AuthScreen> {
                         await Supabase.instance.client.auth.signInWithOAuth(
                           OAuthProvider.google,
                         );
+                        SyncService.onLogin();
                       } catch (e) {
                         if (mounted)
                           ScaffoldMessenger.of(context)

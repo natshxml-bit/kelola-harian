@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:isar/isar.dart';
 import '../services/db_service.dart';
+import '../services/sync_service.dart';
 import '../providers/providers.dart';
 import '../models/category.dart';
 
@@ -26,6 +27,7 @@ class _State extends ConsumerState<CategoryScreen>{
             trailing: IconButton(icon: const Icon(Icons.delete), onPressed: c.isCustom?() async {
               final db=await DbService.isar;
               await db.writeTxn(() async => await db.categoryModels.delete(c.id));
+              SyncService.syncSoon();
               ref.invalidate(categoriesProvider);
             }:null),
           ))).toList(),
@@ -61,6 +63,7 @@ class _State extends ConsumerState<CategoryScreen>{
             ..icon='category'
             ..color=0xFF607D8B
             ..isCustom=true));
+          SyncService.syncSoon();
           ref.invalidate(categoriesProvider);
           if(context.mounted) Navigator.pop(ctx);
         }, child: const Text('Simpan')),

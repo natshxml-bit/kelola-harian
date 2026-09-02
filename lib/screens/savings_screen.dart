@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:isar/isar.dart';
 import '../services/db_service.dart';
+import '../services/sync_service.dart';
 import '../providers/providers.dart';
 import '../models/savings_goal.dart';
 import '../models/general_fund.dart';
@@ -120,6 +121,7 @@ class _FundCard extends ConsumerWidget {
                     f.saldo += q;
                     await db.generalFunds.put(f);
                   });
+                  SyncService.syncSoon();
                   ref.invalidate(generalFundProvider);
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -163,6 +165,7 @@ class _FundCard extends ConsumerWidget {
                 f.saldo = add ? f.saldo + v : (f.saldo - v).clamp(0, 1 << 62);
                 await db.generalFunds.put(f);
               });
+              SyncService.syncSoon();
               ref.invalidate(generalFundProvider);
               if (dctx.mounted) Navigator.pop(dctx);
             },
@@ -194,6 +197,7 @@ class _FundCard extends ConsumerWidget {
                 f.autoPercent = v.clamp(0, 100);
                 await db.generalFunds.put(f);
               });
+              SyncService.syncSoon();
               ref.invalidate(generalFundProvider);
               if (dctx.mounted) Navigator.pop(dctx);
             },
@@ -244,6 +248,7 @@ class _GoalCard extends ConsumerWidget {
                 onPressed: () async {
                   final db = await DbService.isar;
                   await db.writeTxn(() async => await db.savingsGoals.delete(g.id));
+                  SyncService.syncSoon();
                   ref.invalidate(savingsProvider);
                 },
               ),
@@ -313,6 +318,7 @@ class _GoalCard extends ConsumerWidget {
                 g.terkumpul = add ? g.terkumpul + v : (g.terkumpul - v).clamp(0, 1 << 62);
                 await db.savingsGoals.put(g);
               });
+              SyncService.syncSoon();
               ref.invalidate(savingsProvider);
               if (dctx.mounted) Navigator.pop(dctx);
             },
@@ -344,6 +350,7 @@ class _GoalCard extends ConsumerWidget {
                 g.autoPercent = v.clamp(0, 100);
                 await db.savingsGoals.put(g);
               });
+              SyncService.syncSoon();
               ref.invalidate(savingsProvider);
               if (dctx.mounted) Navigator.pop(dctx);
             },
@@ -458,6 +465,7 @@ class _GoalSheetState extends ConsumerState<_GoalSheet> {
       ..terkumpul = 0
       ..autoPercent = _auto
       ..deadline = null));
+    SyncService.syncSoon();
     ref.invalidate(savingsProvider);
     if (mounted) Navigator.pop(context);
   }
