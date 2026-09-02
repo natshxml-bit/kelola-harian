@@ -1,5 +1,6 @@
 import 'package:isar/isar.dart';
 import 'package:path_provider/path_provider.dart' as pp;
+import 'package:uuid/uuid.dart';
 import '../models/category.dart';
 import '../models/transaction.dart';
 import '../models/savings_goal.dart';
@@ -38,6 +39,7 @@ class DbService {
     await db.writeTxn(() async {
       for (var d in defaults) {
         await db.categoryModels.put(CategoryModel()
+          ..remoteId = const Uuid().v4()
           ..userId = userId
           ..nama = d['nama'] as String
           ..icon = d['icon'] as String

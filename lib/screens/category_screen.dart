@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:isar/isar.dart';
+import 'package:uuid/uuid.dart';
 import '../services/db_service.dart';
 import '../services/sync_service.dart';
 import '../providers/providers.dart';
@@ -27,6 +28,7 @@ class _State extends ConsumerState<CategoryScreen>{
             trailing: IconButton(icon: const Icon(Icons.delete), onPressed: c.isCustom?() async {
               final db=await DbService.isar;
               await db.writeTxn(() async => await db.categoryModels.delete(c.id));
+              SyncService.deleteRow('categories', c.remoteId);
               SyncService.syncSoon();
               ref.invalidate(categoriesProvider);
             }:null),
@@ -57,6 +59,7 @@ class _State extends ConsumerState<CategoryScreen>{
           final uid=await ref.read(userIdProvider.future);
           final db=await DbService.isar;
           await db.writeTxn(() async => await db.categoryModels.put(CategoryModel()
+            ..remoteId = const Uuid().v4()
             ..userId=uid
             ..nama=namaC.text.trim()
             ..tipe=tipe

@@ -8,7 +8,10 @@ import '../models/savings_goal.dart';
 import '../models/emergency_fund.dart';
 import '../models/general_fund.dart';
 
+final authTickProvider = StateProvider<int>((ref) => 0);
+
 final userIdProvider = FutureProvider<String>((ref) async {
+  ref.watch(authTickProvider);
   if (SyncService.enabled && SyncService.client?.auth.currentUser != null) {
     return SyncService.uid;
   }

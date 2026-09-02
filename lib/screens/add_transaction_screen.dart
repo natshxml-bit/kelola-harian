@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:isar/isar.dart';
+import 'package:uuid/uuid.dart';
 import '../services/db_service.dart';
 import '../services/sync_service.dart';
 import '../models/transaction.dart';
@@ -37,6 +38,7 @@ class _AddTransactionSheetState extends ConsumerState<_AddTransactionSheet> {
   String tipe = 'pengeluaran';
   String? catId;
   late String catName;
+  String catRemote = '';
   final nominalC = TextEditingController();
   final catatanC = TextEditingController();
   late DateTime tanggal;
@@ -49,8 +51,9 @@ class _AddTransactionSheetState extends ConsumerState<_AddTransactionSheet> {
     final e = widget.edit;
     if (e != null) {
       tipe = e.tipe;
-      catId = e.categoryId;
+      catId = null;
       catName = e.categoryName;
+      catRemote = e.categoryId;
       nominalC.text = e.nominal.toString();
       catatanC.text = e.catatan;
       tanggal = e.tanggal;
@@ -95,9 +98,25 @@ class _AddTransactionSheetState extends ConsumerState<_AddTransactionSheet> {
           catsAsync.when(
             data: (cats) {
               final filtered = cats.where((c) => c.tipe == tipe).toList();
-              if (catId == null && filtered.isNotEmpty) {
-                catId = filtered.first.id.toString();
-                catName = filtered.first.nama;
+              if (catId == null) {
+                CategoryModel? pick;
+                if (_editing && widget.edit != null) {
+                  final eid = widget.edit!.categoryId;
+                  for (final c in filtered) {
+                    if (c.remoteId != null && c.remoteId == eid) { pick = c; break; }
+                  }
+                  if (pick == null) {
+                    for (final c in filtered) {
+                      if (c.id.toString() == eid) { pick = c; break; }
+                    }
+                  }
+                }
+                pick ??= filtered.isNotEmpty ? filtered.first : null;
+                if (pick != null) {
+                  catId = pick.id.toString();
+                  catName = pick.nama;
+                  catRemote = pick.remoteId ?? '';
+                }
               }
               return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
@@ -115,7 +134,11 @@ class _AddTransactionSheetState extends ConsumerState<_AddTransactionSheet> {
                   children: filtered.map((c) {
                     final selected = catId == c.id.toString();
                     return GestureDetector(
-                      onTap: () => setState(() { catId = c.id.toString(); catName = c.nama; }),
+                      onTap: () => setState(() {
+                        catId = c.id.toString();
+                        catName = c.nama;
+                        catRemote = c.remoteId ?? '';
+                      }),
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 200),
                         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -230,6 +253,7 @@ class _AddTransactionSheetState extends ConsumerState<_AddTransactionSheet> {
     if (nama == null || nama.isEmpty) return;
     final db = await DbService.isar;
     final cat = CategoryModel()
+      ..remoteId = const Uuid().v4()
       ..userId = uid
       ..nama = nama
       ..icon = 'category'
@@ -239,7 +263,7 @@ class _AddTransactionSheetState extends ConsumerState<_AddTransactionSheet> {
     await db.writeTxn(() async => await db.categoryModels.put(cat));
     SyncService.syncSoon();
     ref.invalidate(categoriesProvider);
-    setState(() { catId = cat.id.toString(); catName = cat.nama; });
+    setState(() { catId = cat.id.toString(); catName = cat.nama; catRemote = cat.remoteId ?? ''; });
   }
 
   Widget _typeBtn(String label, IconData icon, String value, Color color) {
@@ -247,7 +271,7 @@ class _AddTransactionSheetState extends ConsumerState<_AddTransactionSheet> {
     final ap = context.ap;
     return Expanded(
       child: GestureDetector(
-        onTap: () => setState(() { tipe = value; catId = null; }),
+        onTap: () => setState(() { tipe = value; catId = null; catRemote = ''; catName = ''; }),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           padding: const EdgeInsets.symmetric(vertical: 12),
@@ -289,7 +313,8 @@ class _AddTransactionSheetState extends ConsumerState<_AddTransactionSheet> {
       final t = widget.edit;
       if (t != null) await db.transactionModels.delete(t.id);
     });
-SyncService.syncSoon();
+SyncService.deleteRow('transactions', widget.edit?.remoteId);
+      SyncService.syncSoon();
       _invalidate();
       if (mounted) {
         Navigator.pop(context);
@@ -310,7 +335,7 @@ SyncService.syncSoon();
     await db.writeTxn(() async {
       final tx = old ?? TransactionModel();
       if (old == null) tx.userId = uid;
-      tx.categoryId = catId!;
+      tx.categoryId = catRemote.isNotEmpty ? catRemote : (old?.categoryId ?? '');
       tx.categoryName = catName;
       tx.tipe = tipe;
       tx.nominal = nominal;

@@ -291,13 +291,18 @@ class SyncService {
   static Future<void> _pushTransactions(Isar db, String uidUser) async {
     final rows = await db.transactionModels.filter().userIdEqualTo(uidUser).findAll();
     if (rows.isEmpty) return;
+    final cats = await db.categoryModels.filter().userIdEqualTo(uidUser).findAll();
+    final idByLocal = {for (var c in cats) c.id.toString(): c.remoteId};
     final payload = <Map<String, dynamic>>[];
     for (var r in rows) {
       r.remoteId ??= _uuid();
+      final catRemote = idByLocal[r.categoryId];
+      if (catRemote != null && r.categoryId != catRemote) r.categoryId = catRemote;
+      final cid = r.categoryId.isEmpty ? null : r.categoryId;
       payload.add({
         'id': r.remoteId,
         'user_id': uidUser,
-        'category_id': r.categoryId.isEmpty ? null : r.categoryId,
+        'category_id': cid,
         'category_name': r.categoryName,
         'tipe': r.tipe,
         'nominal': r.nominal,
@@ -467,4 +472,12 @@ class SyncService {
   }
 
   static String _uuid() => const Uuid().v4();
+
+  /// Hapus baris di server untuk row lokal yang dihapus (agar tidak "hidup lagi" saat pull).
+  static Future<void> deleteRow(String table, String? remoteId) async {
+    if (!loggedIn || remoteId == null || remoteId.isEmpty) return;
+    try {
+      await client!.from(table).delete().eq('id', remoteId);
+    } catch (_) {}
+  }
 }

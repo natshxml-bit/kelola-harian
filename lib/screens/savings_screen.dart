@@ -248,6 +248,7 @@ class _GoalCard extends ConsumerWidget {
                 onPressed: () async {
                   final db = await DbService.isar;
                   await db.writeTxn(() async => await db.savingsGoals.delete(g.id));
+                  SyncService.deleteRow('savings_goals', g.remoteId);
                   SyncService.syncSoon();
                   ref.invalidate(savingsProvider);
                 },

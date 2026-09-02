@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'dashboard_screen.dart';
 import 'analysis_screen.dart';
@@ -6,6 +7,7 @@ import 'savings_screen.dart';
 import 'emergency_screen.dart';
 import 'add_transaction_screen.dart';
 import '../services/sync_service.dart';
+import '../providers/providers.dart';
 
 class MainShell extends StatefulWidget {
   const MainShell({super.key});
@@ -26,7 +28,7 @@ class PushScreen extends StatelessWidget {
   }
 }
 
-class _MainShellState extends State<MainShell> {
+class _MainShellState extends ConsumerState<MainShell> {
   int _idx = 0;
   final _pages = const [
     DashboardScreen(),
@@ -82,6 +84,7 @@ class _MainShellState extends State<MainShell> {
     if (keluar == true && mounted) {
       await SyncService.signOut();
       if (mounted) {
+        ref.invalidate(authTickProvider);
         setState(() {});
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Sudah keluar. Data tetap tersimpan di HP ini.')),
