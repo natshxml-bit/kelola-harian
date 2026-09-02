@@ -456,7 +456,14 @@ class SyncService {
             break;
           case 'categories':
             final r = await db.categoryModels.filter().remoteIdEqualTo(remoteId).findFirst();
-            if (r != null) await db.categoryModels.delete(r.id);
+            if (r != null) {
+              await db.categoryModels.delete(r.id);
+              final txs = await db.transactionModels.filter().categoryIdEqualTo(remoteId).findAll();
+              for (var t in txs) {
+                t.categoryId = '';
+                await db.transactionModels.put(t);
+              }
+            }
             break;
           case 'emergency_fund':
             final r = await db.emergencyFunds.filter().remoteIdEqualTo(remoteId).findFirst();
@@ -478,6 +485,17 @@ class SyncService {
     if (!loggedIn || remoteId == null || remoteId.isEmpty) return;
     try {
       await client!.from(table).delete().eq('id', remoteId);
+    } catch (_) {}
+  }
+
+  /// Hapus kategori di server: lepas referensi transaksi dulu (FK), lalu hapus kategori.
+  static Future<void> deleteCategory(String? remoteId) async {
+    if (!loggedIn || remoteId == null || remoteId.isEmpty) return;
+    try {
+      await client!.from('transactions').update({'category_id': null}).eq('category_id', remoteId);
+    } catch (_) {}
+    try {
+      await client!.from('categories').delete().eq('id', remoteId);
     } catch (_) {}
   }
 }

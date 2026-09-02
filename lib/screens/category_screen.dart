@@ -27,10 +27,15 @@ class _State extends ConsumerState<CategoryScreen>{
             subtitle: Text(c.isCustom?'Custom':'Default'),
             trailing: IconButton(icon: const Icon(Icons.delete), onPressed: c.isCustom?() async {
               final db=await DbService.isar;
-              await db.writeTxn(() async => await db.categoryModels.delete(c.id));
-              SyncService.deleteRow('categories', c.remoteId);
+              await db.writeTxn(() async {
+                await db.categoryModels.delete(c.id);
+                final txs = await db.transactionModels.filter().categoryIdEqualTo(c.remoteId ?? '').findAll();
+                for (var t in txs) { t.categoryId = ''; await db.transactionModels.put(t); }
+              });
+              SyncService.deleteCategory(c.remoteId);
               SyncService.syncSoon();
               ref.invalidate(categoriesProvider);
+              ref.invalidate(transactionsProvider);
             }:null),
           ))).toList(),
         ),
