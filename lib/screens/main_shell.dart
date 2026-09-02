@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'dashboard_screen.dart';
 import 'analysis_screen.dart';
 import 'savings_screen.dart';
 import 'emergency_screen.dart';
 import 'add_transaction_screen.dart';
+import '../services/sync_service.dart';
 
 class MainShell extends StatefulWidget {
   const MainShell({super.key});
@@ -34,18 +36,87 @@ class _MainShellState extends State<MainShell> {
   ];
   final _titles = const ['Kelola Harian', 'Analisis', 'Tabung Goal', 'Dana Darurat'];
 
+  Future<void> _doSync() async {
+    if (!SyncService.loggedIn) {
+      await Navigator.pushNamed(context, '/auth');
+      if (mounted) setState(() {});
+      return;
+    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Menyinkronkan data…')),
+    );
+    await SyncService.syncNow();
+    if (mounted)
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Selesai disinkronkan')),
+      );
+  }
+
+  Future<void> _openAccount(BuildContext context) async {
+    if (!SyncService.loggedIn) {
+      await Navigator.pushNamed(context, '/auth');
+      if (mounted) setState(() {});
+      return;
+    }
+    final email = Supabase.instance.client.auth.currentUser?.email;
+    final keluar = await showModalBottomSheet<bool>(
+      context: context,
+      builder: (c) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.account_circle),
+              title: Text(email ?? 'Akun'),
+              subtitle: const Text('Tersinkron via Supabase'),
+            ),
+            ListTile(
+              leading: Icon(Icons.logout, color: Theme.of(c).colorScheme.error),
+              title: Text('Keluar', style: TextStyle(color: Theme.of(c).colorScheme.error)),
+              onTap: () => Navigator.pop(c, true),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (keluar == true && mounted) {
+      await SyncService.signOut();
+      if (mounted) {
+        setState(() {});
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Sudah keluar. Data tetap tersimpan di HP ini.')),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text(_titles[_idx]),
         actions: [
-          if (_idx == 0)
-            IconButton(
-              icon: const Icon(Icons.sync),
-              onPressed: () {},
-              tooltip: 'Sync',
-            ),
+          IconButton(
+            icon: const Icon(Icons.sync),
+            onPressed: _doSync,
+            tooltip: 'Sinkronkan sekarang',
+          ),
+          Builder(
+            builder: (context) {
+              final email = SyncService.loggedIn
+                  ? Supabase.instance.client.auth.currentUser?.email
+                  : null;
+              return IconButton(
+                icon: Icon(
+                  email == null
+                      ? Icons.account_circle_outlined
+                      : Icons.account_circle,
+                ),
+                tooltip: email == null ? 'Login / Sinkronkan' : email,
+                onPressed: () => _openAccount(context),
+              );
+            },
+          ),
         ],
       ),
       body: _pages[_idx],

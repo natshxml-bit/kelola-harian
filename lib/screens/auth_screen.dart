@@ -109,6 +109,7 @@ class _State extends State<AuthScreen> {
                           OAuthProvider.google,
                         );
                         SyncService.onLogin();
+                        if (mounted) Navigator.pop(context);
                       } catch (e) {
                         if (mounted)
                           ScaffoldMessenger.of(context)

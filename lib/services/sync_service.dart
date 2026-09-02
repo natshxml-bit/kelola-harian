@@ -58,6 +58,7 @@ class SyncService {
   }
 
   static bool _subscribed = false;
+  static RealtimeChannel? _channel;
   static Future<void> _subscribeRealtime() async {
     if (!enabled || _subscribed) return;
     final c = client!;
@@ -69,6 +70,7 @@ class SyncService {
     _subscribed = true;
     try {
       final ch = c.channel('kelola-harian-sync');
+      _channel = ch;
       for (final t in _tables) {
         ch.onPostgresChanges(
           event: PostgresChangeEvent.all,
@@ -97,6 +99,19 @@ class SyncService {
     _subscriptionNeedsResub = true;
     _localUid = await getLocalUid();
     syncNow();
+  }
+
+  /// Keluar dari akun: batalkan channel realtime & reset state sync.
+  static Future<void> signOut() async {
+    try {
+      await Supabase.instance.client.auth.signOut();
+    } catch (_) {}
+    try {
+      await _channel?.unsubscribe();
+    } catch (_) {}
+    _channel = null;
+    _subscribed = false;
+    _subscriptionNeedsResub = true;
   }
 
   /// Push semua data lokal user ke Supabase, lalu tarik data server masuk ke lokal.
