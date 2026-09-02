@@ -90,17 +90,17 @@ class DashboardScreen extends ConsumerWidget {
           txs.when(
             data: (list) {
               if (list.isEmpty) {
-                return const SliverPadding(
-                  padding: EdgeInsets.all(32),
+                return SliverPadding(
+                  padding: const EdgeInsets.all(32),
                   sliver: SliverToBoxAdapter(
                     child: Card(
                       child: Padding(
-                        padding: EdgeInsets.all(32),
+                        padding: const EdgeInsets.all(32),
                         child: Center(child: Column(children: [
                           Icon(Icons.receipt_long, size: 48, color: context.ap.textMuted),
-                          SizedBox(height: 12),
+                          const SizedBox(height: 12),
                           Text('Belum ada transaksi', style: TextStyle(color: context.ap.textMuted, fontSize: 14)),
-                          SizedBox(height: 4),
+                          const SizedBox(height: 4),
                           Text('Tap + untuk mulai catat', style: TextStyle(color: context.ap.textMuted, fontSize: 12)),
                         ])),
                       ),
