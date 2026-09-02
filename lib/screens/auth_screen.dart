@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:gotrue/gotrue.dart' show OAuthProvider;
@@ -9,10 +10,10 @@ import '../providers/providers.dart';
 const _webClientId = '322786377406-2t0grtvjjno3buc5q3dfabcksli8uk5d.apps.googleusercontent.com';
 const _androidClientId = '322786377406-okt7iik40keo6tu7o5eqj5n450s9dn5k.apps.googleusercontent.com';
 
-class AuthScreen extends StatefulWidget {
+class AuthScreen extends ConsumerStatefulWidget {
   const AuthScreen({super.key});
   @override
-  State<AuthScreen> createState() => _State();
+  ConsumerState<AuthScreen> createState() => _State();
 }
 
 class _State extends ConsumerState<AuthScreen> {

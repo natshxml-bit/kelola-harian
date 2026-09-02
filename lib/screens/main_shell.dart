@@ -9,10 +9,10 @@ import 'add_transaction_screen.dart';
 import '../services/sync_service.dart';
 import '../providers/providers.dart';
 
-class MainShell extends StatefulWidget {
+class MainShell extends ConsumerStatefulWidget {
   const MainShell({super.key});
   @override
-  State<MainShell> createState() => _MainShellState();
+  ConsumerState<MainShell> createState() => _MainShellState();
 }
 
 class PushScreen extends StatelessWidget {
