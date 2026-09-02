@@ -6,6 +6,7 @@ import '../services/db_service.dart';
 import '../services/sync_service.dart';
 import '../providers/providers.dart';
 import '../models/category.dart';
+import '../models/transaction.dart';
 
 class CategoryScreen extends ConsumerStatefulWidget{
   const CategoryScreen({super.key});
