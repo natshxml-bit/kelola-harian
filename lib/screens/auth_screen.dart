@@ -110,7 +110,10 @@ class _State extends State<AuthScreen> {
                     onPressed: () async {
                       setState(() => loading = true);
                       try {
-                        final gs = GoogleSignIn(serverClientId: _androidClientId);
+                        final gs = GoogleSignIn(
+                          clientId: _androidClientId,
+                          serverClientId: _webClientId,
+                        );
                         final gUser = await gs.signIn();
                         if (gUser == null) {
                           setState(() => loading = false);
