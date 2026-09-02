@@ -1,8 +1,8 @@
 import 'dart:async';
-import 'dart:math';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:isar/isar.dart';
+import 'package:uuid/uuid.dart';
 import 'db_service.dart';
 import '../models/category.dart';
 import '../models/transaction.dart';
@@ -76,7 +76,7 @@ class SyncService {
           table: t,
           filter: PostgresChangeFilter(type: PostgresChangeFilterType.eq, column: 'user_id', value: uid),
           callback: (payload) {
-            if (payload.eventType == PostgresChangeType.delete) {
+            if (payload.eventType == PostgresChangeEvent.delete) {
               _removeLocalByRemoteId(t, payload.oldRecord['id'] as String?);
             }
             syncSoon();
@@ -146,42 +146,46 @@ class SyncService {
   /// Data yang dibuat saat mode offline (userId "local_xxx") diadopsi ke akun saat login.
   static Future<void> _adoptLocalData(Isar db, String uid) async {
     await db.writeTxn(() async {
-      final txs = await db.transactionModels.filter().userIdNotEqualTo(uid).findAll();
+      final txs = await db.transactionModels.where().findAll();
       for (var t in txs) {
         if (t.userId.startsWith('local_')) {
           t.userId = uid;
           await db.transactionModels.put(t);
         }
       }
-      final goals = await db.savingsGoals.filter().userIdNotEqualTo(uid).findAll();
+      final goals = await db.savingsGoals.where().findAll();
       for (var g in goals) {
         if (g.userId.startsWith('local_')) {
           g.userId = uid;
           await db.savingsGoals.put(g);
         }
       }
-      final cats = await db.categoryModels.filter().userIdNotEqualTo(uid).findAll();
+      final cats = await db.categoryModels.where().findAll();
       for (var c in cats) {
         if (c.userId.startsWith('local_')) {
           c.userId = uid;
           await db.categoryModels.put(c);
         }
       }
-      // Emerald & general bersifat singleton (unique userId): pindahkan hanya jika belum ada milik akun.
-      final hasEf = await db.emergencyFunds.filter().userIdEqualTo(uid).count() > 0;
-      if (!hasEf) {
-        final ef = await db.emergencyFunds.filter().userIdNotEqualTo(uid).findFirst();
-        if (ef != null && ef.userId.startsWith('local_')) {
-          ef.userId = uid;
-          await db.emergencyFunds.put(ef);
+      // Emergency & general bersifat singleton (unique userId): adopsi hanya jika belum ada milik akun.
+      final efs = await db.emergencyFunds.where().findAll();
+      if (!efs.any((e) => e.userId == uid)) {
+        for (var e in efs) {
+          if (e.userId.startsWith('local_')) {
+            e.userId = uid;
+            await db.emergencyFunds.put(e);
+            break;
+          }
         }
       }
-      final hasGf = await db.generalFunds.filter().userIdEqualTo(uid).count() > 0;
-      if (!hasGf) {
-        final gf = await db.generalFunds.filter().userIdNotEqualTo(uid).findFirst();
-        if (gf != null && gf.userId.startsWith('local_')) {
-          gf.userId = uid;
-          await db.generalFunds.put(gf);
+      final gfs = await db.generalFunds.where().findAll();
+      if (!gfs.any((g) => g.userId == uid)) {
+        for (var g in gfs) {
+          if (g.userId.startsWith('local_')) {
+            g.userId = uid;
+            await db.generalFunds.put(g);
+            break;
+          }
         }
       }
     });
@@ -447,12 +451,5 @@ class SyncService {
     } catch (_) {}
   }
 
-  static String _uuid() {
-    final r = Random.secure();
-    final b = List<int>.generate(16, (_) => r.nextInt(256));
-    b[6] = (b[6] & 0x0f) | 0x40;
-    b[8] = (b[8] & 0x3f) | 0x80;
-    String h(int s, int n) => b.sublist(s, s + n).map((x) => x.toRadixString(16).padLeft(2, '0')).join();
-    return '${h(0, 4)}-${h(4, 2)}-${h(6, 2)}-${h(8, 2)}-${h(10, 6)}';
-  }
+  static String _uuid() => const Uuid().v4();
 }
