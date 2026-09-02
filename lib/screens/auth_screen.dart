@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:gotrue/gotrue.dart'; // OAuthProvider
+import 'package:google_sign_in/google_sign_in.dart';
 
 import '../services/sync_service.dart';
+
+const _webClientId = '322786377406-2t0grtvjjno3buc5q3dfabcksli8uk5d.apps.googleusercontent.com';
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
@@ -104,9 +106,19 @@ class _State extends State<AuthScreen> {
                     icon: const Icon(Icons.login),
                     label: const Text('Login Google'),
                     onPressed: () async {
+                      setState(() => loading = true);
                       try {
-                        await Supabase.instance.client.auth.signInWithOAuth(
-                          OAuthProvider.google,
+                        final gs = GoogleSignIn(serverClientId: _webClientId);
+                        final gUser = await gs.signIn();
+                        if (gUser == null) {
+                          setState(() => loading = false);
+                          return;
+                        }
+                        final gAuth = await gUser.authentication;
+                        await Supabase.instance.client.auth.signInWithIdToken(
+                          provider: Provider.google,
+                          idToken: gAuth.idToken!,
+                          accessToken: gAuth.accessToken,
                         );
                         SyncService.onLogin();
                         if (mounted) Navigator.pop(context);
@@ -115,6 +127,7 @@ class _State extends State<AuthScreen> {
                           ScaffoldMessenger.of(context)
                               .showSnackBar(SnackBar(content: Text('$e')));
                       }
+                      setState(() => loading = false);
                     },
                   ),
                   TextButton(
