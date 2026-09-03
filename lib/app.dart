@@ -1,18 +1,26 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'theme.dart';
 import 'screens/main_shell.dart';
 import 'screens/auth_screen.dart';
+import 'screens/loading_screen.dart';
+import 'providers/providers.dart';
 
-class App extends StatelessWidget {
+class App extends ConsumerWidget {
   const App({super.key});
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final uidAsync = ref.watch(userIdProvider);
     return MaterialApp(
       title: 'Pengelola Harian',
       theme: _theme(Brightness.light),
       darkTheme: _theme(Brightness.dark),
       themeMode: ThemeMode.system,
-      home: const MainShell(),
+      home: uidAsync.when(
+        data: (_) => const MainShell(),
+        loading: () => const LoadingScreen(),
+        error: (_, __) => const LoadingScreen(),
+      ),
       routes: {'/auth': (_) => const AuthScreen()},
     );
   }
