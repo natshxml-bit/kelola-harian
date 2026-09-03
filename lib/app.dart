@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'theme.dart';
@@ -6,21 +7,33 @@ import 'screens/auth_screen.dart';
 import 'screens/loading_screen.dart';
 import 'providers/providers.dart';
 
-class App extends ConsumerWidget {
+class App extends ConsumerStatefulWidget {
   const App({super.key});
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final uidAsync = ref.watch(userIdProvider);
+  ConsumerState<App> createState() => _AppState();
+}
+
+class _AppState extends ConsumerState<App> {
+  bool _minDone = false;
+
+  @override
+  void initState() {
+    super.initState();
+    Timer(const Duration(milliseconds: 2000), () {
+      if (mounted) setState(() => _minDone = true);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final txsAsync = ref.watch(transactionsProvider);
+    final ready = txsAsync.hasValue && _minDone;
     return MaterialApp(
       title: 'Pengelola Harian',
       theme: _theme(Brightness.light),
       darkTheme: _theme(Brightness.dark),
       themeMode: ThemeMode.system,
-      home: uidAsync.when(
-        data: (_) => const MainShell(),
-        loading: () => const LoadingScreen(),
-        error: (_, __) => const LoadingScreen(),
-      ),
+      home: ready ? const MainShell() : const LoadingScreen(),
       routes: {'/auth': (_) => const AuthScreen()},
     );
   }
