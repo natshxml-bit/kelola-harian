@@ -94,7 +94,7 @@ class _DayGroup extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 8),
-          for (final t in items) _txTile(context, t),
+          for (final t in items) _txTile(t),
         ],
       ),
     );
