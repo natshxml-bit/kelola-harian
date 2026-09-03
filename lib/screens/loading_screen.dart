@@ -20,7 +20,7 @@ class LoadingScreen extends StatelessWidget {
                 color: kSeed.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(24),
               ),
-              child: const Icon(Icons.wallet, size: 56, color: kSeed),
+              child: const Icon(Icons.account_balance_wallet, size: 56, color: kSeed),
             ),
             const SizedBox(height: 20),
             Text(
