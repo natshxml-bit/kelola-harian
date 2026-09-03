@@ -5,6 +5,7 @@ import 'dashboard_screen.dart';
 import 'analysis_screen.dart';
 import 'savings_screen.dart';
 import 'emergency_screen.dart';
+import 'history_screen.dart';
 import 'add_transaction_screen.dart';
 import '../services/sync_service.dart';
 import '../providers/providers.dart';
@@ -35,8 +36,9 @@ class _MainShellState extends ConsumerState<MainShell> {
     AnalysisScreen(),
     SavingsScreen(),
     EmergencyScreen(),
+    HistoryScreen(),
   ];
-  final _titles = const ['Kelola Harian', 'Analisis', 'Tabung Goal', 'Dana Darurat'];
+  final _titles = const ['Kelola Harian', 'Analisis', 'Tabung Goal', 'Dana Darurat', 'Riwayat'];
 
   Future<void> _doSync() async {
     if (!SyncService.loggedIn) {
@@ -139,6 +141,7 @@ class _MainShellState extends ConsumerState<MainShell> {
           NavigationDestination(icon: Icon(Icons.analytics_outlined), selectedIcon: Icon(Icons.analytics), label: 'Analisis'),
           NavigationDestination(icon: Icon(Icons.savings_outlined), selectedIcon: Icon(Icons.savings), label: 'Tabung'),
           NavigationDestination(icon: Icon(Icons.health_and_safety_outlined), selectedIcon: Icon(Icons.health_and_safety), label: 'Darurat'),
+          NavigationDestination(icon: Icon(Icons.history_outlined), selectedIcon: Icon(Icons.history), label: 'Riwayat'),
         ],
       ),
     );

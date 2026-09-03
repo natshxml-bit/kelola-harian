@@ -16,6 +16,7 @@ class AnalysisScreen extends ConsumerStatefulWidget {
 
 class _State extends ConsumerState<AnalysisScreen> {
   String range = 'bulanan';
+  String pview = 'pengeluaran';
 
   @override
   Widget build(BuildContext context) {
@@ -24,14 +25,17 @@ class _State extends ConsumerState<AnalysisScreen> {
     return txsAsync.when(
       data: (txs) {
         final series = _series(txs);
-        final catMap = _byCategory(txs);
-        final total = series.fold<int>(0, (a, e) => a + e.total);
+        final catMap = _byCategory(txs, pview);
+        final total = series.fold<int>(0, (a, e) => a + e.masuk + e.keluar);
+        final count = txs.length;
         final avg = series.isEmpty ? 0 : total ~/ series.length;
-        final maxItem = series.isEmpty ? null : series.reduce((a, b) => a.total > b.total ? a : b);
+        final maxItem = series.isEmpty
+            ? null
+            : series.reduce((a, b) => (a.masuk + a.keluar) > (b.masuk + b.keluar) ? a : b);
         return ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            _SummaryCard(total: total, count: txs.length, avg: avg, range: range, maxItem: maxItem),
+            _SummaryCard(total: total, count: count, avg: avg, range: range, maxItem: maxItem),
             const SizedBox(height: 16),
             SegmentedButton<String>(
               segments: const [
@@ -52,12 +56,12 @@ class _State extends ConsumerState<AnalysisScreen> {
             _TrendCard(series: series, range: range),
             const SizedBox(height: 12),
             catsAsync.when(
-              data: (cats) => _PieCard(catMap: catMap, cats: cats),
-              loading: () => const _PieCard(catMap: {}, cats: []),
+              data: (cats) => _PieCard(catMap: catMap, cats: cats, pview: pview, onToggle: (v) => setState(() => pview = v)),
+              loading: () => const _PieCard(catMap: {}, cats: [], pview: 'pengeluaran', onToggle: null),
               error: (e, s) => const SizedBox(),
             ),
             const SizedBox(height: 12),
-            _InsightCard(catMap: catMap),
+            _InsightCard(catMap: catMap, pview: pview),
           ],
         );
       },
@@ -66,36 +70,41 @@ class _State extends ConsumerState<AnalysisScreen> {
     );
   }
 
-  List<({String label, int total})> _series(List<TransactionModel> txs) {
+  List<({String label, int masuk, int keluar})> _series(List<TransactionModel> txs) {
     final now = DateTime.now();
-    final out = <({String label, int total})>[];
-    int sum(DateTime a, DateTime b) =>
+    final out = <({String label, int masuk, int keluar})>[];
+    int masuk(DateTime a, DateTime b) =>
+        txs.where((t) => t.tipe == 'pemasukan' && sameDay(t.tanggal, a)).fold<int>(0, (x, t) => x + t.nominal);
+    int keluar(DateTime a, DateTime b) =>
         txs.where((t) => t.tipe == 'pengeluaran' && sameDay(t.tanggal, a)).fold<int>(0, (x, t) => x + t.nominal);
-
     if (range == 'harian') {
       for (var i = 6; i >= 0; i--) {
         final d = now.subtract(Duration(days: i));
-        out.add((label: _dow(d.weekday), total: sum(d, d)));
+        out.add((label: _dow(d.weekday), masuk: masuk(d, d), keluar: keluar(d, d)));
       }
     } else if (range == 'mingguan') {
       for (var i = 29; i >= 0; i--) {
         final d = now.subtract(Duration(days: i));
-        out.add((label: i % 5 == 0 ? '${d.day}/${d.month}' : '', total: sum(d, d)));
+        out.add((label: i % 5 == 0 ? '${d.day}/${d.month}' : '', masuk: masuk(d, d), keluar: keluar(d, d)));
       }
     } else if (range == 'bulanan') {
       final first = DateTime(now.year, now.month - 5, 1);
       for (var i = 0; i < 6; i++) {
         final m = DateTime(first.year, first.month + i, 1);
-        final tot = txs.where((t) => t.tipe == 'pengeluaran' && t.tanggal.year == m.year && t.tanggal.month == m.month)
+        final mi = txs.where((t) => t.tipe == 'pemasukan' && t.tanggal.year == m.year && t.tanggal.month == m.month)
             .fold<int>(0, (a, t) => a + t.nominal);
-        out.add((label: _month[m.month - 1], total: tot));
+        final mo = txs.where((t) => t.tipe == 'pengeluaran' && t.tanggal.year == m.year && t.tanggal.month == m.month)
+            .fold<int>(0, (a, t) => a + t.nominal);
+        out.add((label: _month[m.month - 1], masuk: mi, keluar: mo));
       }
     } else {
       final first = now.year - 4;
       for (var y = first; y <= now.year; y++) {
-        final tot = txs.where((t) => t.tipe == 'pengeluaran' && t.tanggal.year == y)
+        final mi = txs.where((t) => t.tipe == 'pemasukan' && t.tanggal.year == y)
             .fold<int>(0, (a, t) => a + t.nominal);
-        out.add((label: '$y', total: tot));
+        final mo = txs.where((t) => t.tipe == 'pengeluaran' && t.tanggal.year == y)
+            .fold<int>(0, (a, t) => a + t.nominal);
+        out.add((label: '$y', masuk: mi, keluar: mo));
       }
     }
     return out;
@@ -108,9 +117,9 @@ class _State extends ConsumerState<AnalysisScreen> {
 
   String _dow(int w) => const ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'][w - 1];
 
-  Map<String, int> _byCategory(List<TransactionModel> txs) {
+  Map<String, int> _byCategory(List<TransactionModel> txs, String tipe) {
     final map = <String, int>{};
-    for (var t in txs.where((e) => e.tipe == 'pengeluaran'))
+    for (var t in txs.where((e) => e.tipe == tipe))
       map[t.categoryName] = (map[t.categoryName] ?? 0) + t.nominal;
     return map;
   }
@@ -119,7 +128,7 @@ class _State extends ConsumerState<AnalysisScreen> {
 class _SummaryCard extends StatelessWidget {
   final int total, count, avg;
   final String range;
-  final ({String label, int total})? maxItem;
+  final ({String label, int masuk, int keluar})? maxItem;
   const _SummaryCard({required this.total, required this.count, required this.avg, required this.range, required this.maxItem});
 
   String get _rangeLabel => switch (range) {
@@ -149,7 +158,7 @@ class _SummaryCard extends StatelessWidget {
           const SizedBox(width: 12),
           _mini(context, 'Rata-rata', fmt(avg)),
           const SizedBox(width: 12),
-          _mini(context, 'Puncak', maxItem == null ? '-' : '${maxItem!.label} • ${fmt(maxItem!.total)}'),
+          _mini(context, 'Puncak', maxItem == null ? '-' : '${maxItem!.label} • ${fmt(maxItem!.masuk + maxItem!.keluar)}'),
         ]),
       ]),
     );
@@ -171,22 +180,28 @@ class _SummaryCard extends StatelessWidget {
 }
 
 class _TrendCard extends StatelessWidget {
-  final List<({String label, int total})> series;
+  final List<({String label, int masuk, int keluar})> series;
   final String range;
   const _TrendCard({required this.series, required this.range});
 
   @override
   Widget build(BuildContext context) {
     final ap = context.ap;
-    final total = series.fold<int>(0, (a, e) => a + e.total);
+    final total = series.fold<int>(0, (a, e) => a + e.masuk + e.keluar);
     return Card(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(children: [
-            Text('Trend Pengeluaran', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15, color: ap.text)),
+            Text('Trend Arus', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15, color: ap.text)),
             const Spacer(),
             Text('Total ${fmt(total)}', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: kSeed)),
+          ]),
+          const SizedBox(height: 8),
+          Row(children: [
+            _legend(ap.income, 'Pemasukan'),
+            const SizedBox(width: 12),
+            _legend(ap.expense, 'Pengeluaran'),
           ]),
           const SizedBox(height: 16),
           if (total == 0)
@@ -197,18 +212,29 @@ class _TrendCard extends StatelessWidget {
       ),
     );
   }
+
+  Widget _legend(Color color, String label) {
+    return Row(mainAxisSize: MainAxisSize.min, children: [
+      Container(width: 10, height: 10, decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(2))),
+      const SizedBox(width: 4),
+      Text(label, style: const TextStyle(fontSize: 11)),
+    ]);
+  }
 }
 
 class _LineChart extends StatelessWidget {
-  final List<({String label, int total})> series;
+  final List<({String label, int masuk, int keluar})> series;
   const _LineChart({required this.series});
 
   @override
   Widget build(BuildContext context) {
     final ap = context.ap;
-    final maxY = series.map((e) => e.total).reduce((a, b) => a > b ? a : b);
-    final spots = <FlSpot>[
-      for (var i = 0; i < series.length; i++) FlSpot(i.toDouble(), series[i].total.toDouble()),
+    final maxY = series.fold<int>(0, (a, e) => [a, e.masuk, e.keluar].reduce((x, y) => x > y ? x : y));
+    final inSpots = <FlSpot>[
+      for (var i = 0; i < series.length; i++) FlSpot(i.toDouble(), series[i].masuk.toDouble()),
+    ];
+    final outSpots = <FlSpot>[
+      for (var i = 0; i < series.length; i++) FlSpot(i.toDouble(), series[i].keluar.toDouble()),
     ];
     return LineChart(
       LineChartData(
@@ -248,9 +274,11 @@ class _LineChart extends StatelessWidget {
             getTooltipColor: (_) => ap.card,
             getTooltipItems: (vals) => vals.map((v) {
               final i = v.x.toInt();
-              final label = i >= 0 && i < series.length ? series[i].label : '';
+              final masuk = i >= 0 && i < series.length ? series[i].masuk : 0;
+              final keluar = i >= 0 && i < series.length ? series[i].keluar : 0;
+              final dlabel = i >= 0 && i < series.length ? series[i].label : '';
               return LineTooltipItem(
-                '$label: ${fmt(series[i].total)}',
+                '$dlabel\n↓ ${fmt(masuk)}   ↑ ${fmt(keluar)}',
                 TextStyle(fontWeight: FontWeight.w700, fontSize: 12, color: ap.text),
               );
             }).toList(),
@@ -258,28 +286,32 @@ class _LineChart extends StatelessWidget {
         ),
         lineBarsData: [
           LineChartBarData(
-            spots: spots,
+            spots: inSpots,
             isCurved: true,
             curveSmoothness: 0.3,
             isStrokeCapRound: true,
             barWidth: 3,
-            gradient: const LinearGradient(colors: [kSeed, kAccent]),
-            dotData: FlDotData(
-              show: true,
-              getDotPainter: (spot, pct, bar, idx) => FlDotCirclePainter(
-                radius: idx == series.length - 1 ? 5 : 3,
-                color: idx == series.length - 1 ? kAccent : ap.card,
-                strokeWidth: 2.5,
-                strokeColor: idx == series.length - 1 ? kAccent : kSeed,
-              ),
-            ),
+            color: ap.income,
+            dotData: FlDotData(show: true),
             belowBarData: BarAreaData(
               show: true,
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [kSeed.withValues(alpha: 0.35), kSeed.withValues(alpha: 0.0)],
+                colors: [ap.income.withValues(alpha: 0.3), ap.income.withValues(alpha: 0.0)],
               ),
+            ),
+          ),
+          LineChartBarData(
+            spots: outSpots,
+            isCurved: true,
+            curveSmoothness: 0.3,
+            isStrokeCapRound: true,
+            barWidth: 3,
+            color: ap.expense,
+            dotData: FlDotData(show: true),
+            belowBarData: BarAreaData(
+              show: false,
             ),
           ),
         ],
@@ -291,7 +323,9 @@ class _LineChart extends StatelessWidget {
 class _PieCard extends StatelessWidget {
   final Map<String, int> catMap;
   final List<CategoryModel> cats;
-  const _PieCard({required this.catMap, required this.cats});
+  final String pview;
+  final ValueChanged<String>? onToggle;
+  const _PieCard({required this.catMap, required this.cats, required this.pview, this.onToggle});
 
   static const _palette = [
     0xFF2196F3, 0xFF4CAF50, 0xFFFF9800, 0xFF9C27B0, 0xFF00BCD4,
@@ -313,7 +347,7 @@ class _PieCard extends StatelessWidget {
       return Card(
         child: Padding(
           padding: const EdgeInsets.all(16),
-          child: Text('Belum ada data pengeluaran', style: TextStyle(color: ap.textMuted)),
+          child: Text('Belum ada data ${pview}', style: TextStyle(color: ap.textMuted)),
         ),
       );
     }
@@ -321,7 +355,24 @@ class _PieCard extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('Pengeluaran per Kategori', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15, color: ap.text)),
+          Row(children: [
+            Text('Per Kategori', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15, color: ap.text)),
+            const Spacer(),
+            if (onToggle != null)
+              SegmentedButton<String>(
+                segments: const [
+                  ButtonSegment(value: 'pengeluaran', label: Text('Keluar')),
+                  ButtonSegment(value: 'pemasukan', label: Text('Masuk')),
+                ],
+                selected: {pview},
+                onSelectionChanged: (v) => onToggle!(v.first),
+                showSelectedIcon: false,
+                style: ButtonStyle(
+                  visualDensity: VisualDensity.compact,
+                  textStyle: WidgetStateProperty.all(const TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
+                ),
+              ),
+          ]),
           const SizedBox(height: 8),
           Row(children: [
             SizedBox(
@@ -369,7 +420,8 @@ class _PieCard extends StatelessWidget {
 
 class _InsightCard extends StatelessWidget {
   final Map<String, int> catMap;
-  const _InsightCard({required this.catMap});
+  final String pview;
+  const _InsightCard({required this.catMap, required this.pview});
 
   @override
   Widget build(BuildContext context) {
@@ -378,10 +430,10 @@ class _InsightCard extends StatelessWidget {
     if (catMap.isNotEmpty) {
       final top = catMap.entries.reduce((a, b) => a.value > b.value ? a : b);
       final total = catMap.values.fold<int>(0, (a, b) => a + b);
-      items.add((Icons.local_fire_department, 'Paling boros: ${top.key} (${(top.value * 100 / total).toStringAsFixed(0)}% dari belanja)'));
+      items.add((Icons.local_fire_department, 'Top ${pview}: ${top.key} (${(top.value * 100 / total).toStringAsFixed(0)}%)'));
     }
     if (catMap.isNotEmpty) {
-      items.add((Icons.analytics, '${catMap.length} kategori aktif pada periode ini'));
+      items.add((Icons.analytics, '${catMap.length} kategori ${pview} aktif pada periode ini'));
     }
     return Card(
       child: Padding(

@@ -8,6 +8,7 @@ import 'analysis_screen.dart';
 import 'savings_screen.dart';
 import 'emergency_screen.dart';
 import 'category_screen.dart';
+import 'history_screen.dart';
 import 'main_shell.dart';
 
 class DashboardScreen extends ConsumerWidget {
@@ -17,7 +18,10 @@ class DashboardScreen extends ConsumerWidget {
     final dash = ref.watch(dashboardProvider);
     final txs = ref.watch(transactionsProvider);
     return RefreshIndicator(
-      onRefresh: () async => ref.invalidate(dashboardProvider),
+      onRefresh: () async {
+        ref.invalidate(dashboardProvider);
+        ref.invalidate(transactionsProvider);
+      },
       child: CustomScrollView(
         slivers: [
           SliverPadding(
@@ -75,6 +79,13 @@ class DashboardScreen extends ConsumerWidget {
                   color: const Color(0xFF2196F3),
                   onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PushScreen(title: 'Analisis', child: AnalysisScreen()))),
                 ),
+                const SizedBox(width: 12),
+                _QuickAction(
+                  icon: Icons.history,
+                  label: 'Riwayat',
+                  color: const Color(0xFF7E57C2),
+                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PushScreen(title: 'Riwayat', child: HistoryScreen()))),
+                ),
               ]),
             ),
           ),
@@ -82,14 +93,15 @@ class DashboardScreen extends ConsumerWidget {
             padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
             sliver: SliverToBoxAdapter(
               child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                Text('Transaksi Terbaru', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16, color: context.ap.text)),
+                Text('Transaksi Hari Ini', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16, color: context.ap.text)),
                 Text('ketuk untuk edit', style: TextStyle(color: context.ap.textMuted, fontSize: 11)),
               ]),
             ),
           ),
           txs.when(
             data: (list) {
-              if (list.isEmpty) {
+              final today = list.where((t) => _isToday(t.tanggal)).toList();
+              if (today.isEmpty) {
                 return SliverPadding(
                   padding: const EdgeInsets.all(32),
                   sliver: SliverToBoxAdapter(
@@ -99,7 +111,7 @@ class DashboardScreen extends ConsumerWidget {
                         child: Center(child: Column(children: [
                           Icon(Icons.receipt_long, size: 48, color: context.ap.textMuted),
                           const SizedBox(height: 12),
-                          Text('Belum ada transaksi', style: TextStyle(color: context.ap.textMuted, fontSize: 14)),
+                          Text('Belum ada transaksi hari ini', style: TextStyle(color: context.ap.textMuted, fontSize: 14)),
                           const SizedBox(height: 4),
                           Text('Tap + untuk mulai catat', style: TextStyle(color: context.ap.textMuted, fontSize: 12)),
                         ])),
@@ -113,7 +125,7 @@ class DashboardScreen extends ConsumerWidget {
                 sliver: SliverList(
                   delegate: SliverChildBuilderDelegate(
                     (ctx, i) {
-                      final t = list[i];
+                      final t = today[i];
                       final isIn = t.tipe == 'pemasukan';
                       final c = isIn ? context.ap.income : context.ap.expense;
                       return Padding(
@@ -146,7 +158,7 @@ class DashboardScreen extends ConsumerWidget {
                         ),
                       );
                     },
-                    childCount: list.length > 15 ? 15 : list.length,
+                    childCount: today.length,
                   ),
                 ),
               );
@@ -158,6 +170,11 @@ class DashboardScreen extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  bool _isToday(DateTime d) {
+    final n = DateTime.now();
+    return d.year == n.year && d.month == n.month && d.day == n.day;
   }
 }
 
