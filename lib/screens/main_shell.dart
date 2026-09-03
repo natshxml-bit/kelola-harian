@@ -6,6 +6,7 @@ import 'analysis_screen.dart';
 import 'savings_screen.dart';
 import 'emergency_screen.dart';
 import 'history_screen.dart';
+import 'splash_overlay.dart';
 import 'add_transaction_screen.dart';
 import '../services/sync_service.dart';
 import '../providers/providers.dart';
@@ -31,6 +32,7 @@ class PushScreen extends StatelessWidget {
 
 class _MainShellState extends ConsumerState<MainShell> {
   int _idx = 0;
+  bool _showSplash = true;
   final _pages = const [
     DashboardScreen(),
     AnalysisScreen(),
@@ -124,7 +126,15 @@ class _MainShellState extends ConsumerState<MainShell> {
           ),
         ],
       ),
-      body: _pages[_idx],
+      body: Stack(
+        children: [
+          _pages[_idx],
+          if (_showSplash)
+            SplashOverlay(onDismiss: () {
+              if (mounted) setState(() => _showSplash = false);
+            }),
+        ],
+      ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => showAddTransaction(context),
         backgroundColor: const Color(0xFF57758A),
